@@ -12,7 +12,7 @@ from torchvision.models._utils import IntermediateLayerGetter
 from typing import Dict, List
 from transformers import VitDetConfig, VitDetModel
 from util.misc import NestedTensor, is_main_process
-
+from transformers import AutoImageProcessor, ViTModel
 from .position_encoding import build_position_encoding
 import torch
 
@@ -59,19 +59,26 @@ class BackboneBase(nn.Module):
 
     def __init__(self, num_channels: int):
         super().__init__()
-        config = VitDetConfig()
-        self.body = VitDetModel(config)
+        #config = VitDetConfig("google/vitdet-base-patch16-224")
+        #self.body = VitDetModel.from_pretrained("google/vit-base-patch16-224")
+        self.image_processor = AutoImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
+        self.model = ViTModel.from_pretrained("google/vit-base-patch16-224-in21k")
         self.num_channels = num_channels
 
     def forward(self, tensor_list: NestedTensor):
         #print(tensor_list.tensors.shape)
         #desired_size = (224, 224)
         #resized_tensor = F.interpolate(tensor_list.tensors, size=desired_size, mode='bilinear', align_corners=False)
-        m = tensor_list.mask
+        input = self.image_processor(tensor_list.tensors, return_tensors="pt", do_rescale = False)
+        input = input.to('cuda')
         with torch.no_grad():
-            outputs = self.body(tensor_list.tensors)
+            outputs = self.model(**input)
         x = outputs.last_hidden_state
+        x = x[:,1:,:]
+        x = x.permute(0,2,1)
+        x = x.view(x.shape[0], x.shape[1], 14, 14)
         out: Dict[str, NestedTensor] = {}
+        m = tensor_list.mask
         mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
         out['layer0'] = NestedTensor(x, mask)
         return out
