@@ -69,8 +69,8 @@ class BackboneBase(nn.Module):
         #print(tensor_list.tensors.shape)
         #desired_size = (224, 224)
         #resized_tensor = F.interpolate(tensor_list.tensors, size=desired_size, mode='bilinear', align_corners=False)
-        m = tensor_list.mask
         input = self.image_processor(tensor_list.tensors, return_tensors="pt", do_rescale = False)
+        input = input.to('cuda')
         with torch.no_grad():
             outputs = self.model(**input)
         x = outputs.last_hidden_state
@@ -78,6 +78,7 @@ class BackboneBase(nn.Module):
         x = x.permute(0,2,1)
         x = x.view(x.shape[0], x.shape[1], 14, 14)
         out: Dict[str, NestedTensor] = {}
+        m = tensor_list.mask
         mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
         out['layer0'] = NestedTensor(x, mask)
         return out
