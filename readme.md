@@ -1,9 +1,5 @@
 # Training
 
-## Bộ dữ liệu GUN
-
-    python main.py --dataset_file coco --data_path ../dataset/gun --output_dir outputgun
-
 ## Bộ dữ liệu: PASCAL VOC 2012
 
 - Nếu có sử dụng CUDA:
@@ -18,7 +14,7 @@
     python main.py --dataset_file pascal --data_path ../dataset/pascal --output_dir output --resume output --device cpu
 ```
 
-Test
+- Test
 python test.py --dataset_file pascal --data_path ../dataset/pascal --output_dir output --device cpu
 
 ## Bộ dữ liệu COCO 2017
